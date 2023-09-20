@@ -38,20 +38,6 @@
     - [Create Secure boot keys](#create-secure-boot-keys)
     - [Sign unsigned files](#sign-unsigned-files)
   - [Automatic decrypt LUKS device with TPM](#automatic-decrypt-luks-device-with-tpm)
-- [Ricing (Optional, personal setup)](#ricing-optional-personal-setup)
-  - [Install non-fontamental packages](#install-non-fontamental-packages)
-  - [Better pacman](#better-pacman)
-  - [Organize .bashrc](#organize-bashrc)
-  - [Pacman wrapper](#pacman-wrapper)
-  - [Add man](#add-man)
-  - [Install KDE](#install-kde)
-  - [KDE Wallet](#kde-wallet)
-  - [CUPS service](#cups-service)
-  - [Fingerprint](#fingerprint)
-    - [Login configuration](#login-configuration)
-  - [CPU frequency scaling](#cpu-frequency-scaling)
-  - [Firewall](#firewall)
-  - [SDDM theme fix](#sddm-theme-fix)
 
 ## Pre-installation
 
