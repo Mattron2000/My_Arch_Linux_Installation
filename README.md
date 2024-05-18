@@ -2,63 +2,69 @@
 
 ## Summary <!-- omit in toc -->
 - [Pre-installation](#pre-installation)
-  - [Set the console keyboard layout and font](#set-the-console-keyboard-layout-and-font)
-  - [Verify the boot mode](#verify-the-boot-mode)
-  - [Connect to the internet](#connect-to-the-internet)
-    - [Authenticate to the wireless network](#authenticate-to-the-wireless-network)
-  - [Update the system clock](#update-the-system-clock)
-  - [Partition the disks](#partition-the-disks)
-    - [Encrypt root partition](#encrypt-root-partition)
-    - [Preparing the logical volumes](#preparing-the-logical-volumes)
-  - [Format the partitions](#format-the-partitions)
-  - [Mount the file systems](#mount-the-file-systems)
+	- [Set the console keyboard layout and font](#set-the-console-keyboard-layout-and-font)
+	- [Verify the boot mode](#verify-the-boot-mode)
+	- [Connect to the internet](#connect-to-the-internet)
+		- [Authenticate to the wireless network](#authenticate-to-the-wireless-network)
+	- [\[OPTIONAL\] ssh connection](#optional-ssh-connection)
+	- [Update the system clock](#update-the-system-clock)
+	- [Partition the disks](#partition-the-disks)
+		- [Encrypt root partition](#encrypt-root-partition)
+		- [Preparing the logical volumes](#preparing-the-logical-volumes)
+	- [Format the partitions](#format-the-partitions)
+	- [Mount the file systems](#mount-the-file-systems)
 - [Installation](#installation)
-  - [Select the mirrors](#select-the-mirrors)
-  - [Install essential packages](#install-essential-packages)
+	- [Select the mirrors](#select-the-mirrors)
+	- [Install essential packages](#install-essential-packages)
 - [Configure the system](#configure-the-system)
-  - [Fstab](#fstab)
-  - [Chroot](#chroot)
-  - [Time zone](#time-zone)
-  - [Localization](#localization)
-  - [Network configuration](#network-configuration)
-  - [Setting mkinitcpio](#setting-mkinitcpio)
-  - [Initramfs](#initramfs)
-  - [Boot loader](#boot-loader)
-    - [Installing the EFI boot manager](#installing-the-efi-boot-manager)
-    - [Configuration](#configuration)
-      - [Loader configuration](#loader-configuration)
-  - [Kernel cmdline](#kernel-cmdline)
-  - [Root password](#root-password)
-  - [Manage users](#manage-users)
-  - [Configure iwd service](#configure-iwd-service)
-  - [Reboot](#reboot)
+	- [Fstab](#fstab)
+	- [Chroot](#chroot)
+	- [Time zone](#time-zone)
+	- [Localization](#localization)
+	- [Network configuration](#network-configuration)
+	- [Setting mkinitcpio](#setting-mkinitcpio)
+	- [Kernel cmdline](#kernel-cmdline)
+	- [Initramfs](#initramfs)
+	- [Boot loader](#boot-loader)
+		- [Installing the EFI boot manager](#installing-the-efi-boot-manager)
+		- [Configuration](#configuration)
+			- [Loader configuration](#loader-configuration)
+	- [Root password](#root-password)
+	- [Manage users](#manage-users)
+	- [Configure iwd service](#configure-iwd-service)
+	- [Setup ssh server to persiste after reboot](#setup-ssh-server-to-persiste-after-reboot)
+	- [Reboot](#reboot)
 - [Post-installation](#post-installation)
-  - [Reconnect Wifi](#reconnect-wifi)
-  - [Secure boot](#secure-boot)
-    - [Create Secure boot keys](#create-secure-boot-keys)
-    - [Sign unsigned files](#sign-unsigned-files)
-  - [Automatic decrypt LUKS device with TPM](#automatic-decrypt-luks-device-with-tpm)
+	- [Reconnect Wifi](#reconnect-wifi)
+	- [SSH reconnection](#ssh-reconnection)
+	- [Secure boot](#secure-boot)
+		- [Create Secure boot keys](#create-secure-boot-keys)
+		- [Sign unsigned files](#sign-unsigned-files)
+	- [Automatic decrypt LUKS device with TPM](#automatic-decrypt-luks-device-with-tpm)
 
 ## Pre-installation
 
 ### Set the console keyboard layout and font
 
 ```bash
-ls /usr/share/kbd/keymaps/**/*.map.gz   # layouts can be listed with
-loadkeys us # to set the keyboard layout
-setfont ter-120b    # Console fonts are located in /usr/share/kbd/consolefonts/ and can likewise be set with
+ls /usr/share/kbd/keymaps/**/*.map.gz	# layouts can be listed with
+loadkeys us	# to set the keyboard layout
+
+setfont -d	# set font with default value, other fonts are located in "/usr/share/kbd/consolefonts/" 
 ```
 
 ### Verify the boot mode
 
 ```bash
-cat /sys/firmware/efi/fw_platform_size  # To verify the boot mode
+cat /sys/firmware/efi/fw_platform_size	# To verify the boot mode
+# '64' a 64-bit system is booted in x64 UEFI mode
+# '32' a 32-bit system is booted in IA32 UEFI mode
 ```
 
 ### Connect to the internet
 
 ```bash
-ping archlinux.org  # The connection may be verified with
+ping archlinux.org	# The connection may be verified with 
 ```
 
 If it's works, then go to [Update the system clock](#update-the-system-clock) chapter else connect Ethernet cable and retry or connect internet by Wi-Fi following the [next chapter](#authenticate-to-the-wireless-network).
@@ -66,12 +72,28 @@ If it's works, then go to [Update the system clock](#update-the-system-clock) ch
 #### Authenticate to the wireless network
 
 ```bash
-iwctl   # get an interactive prompt
-device list # list all Wi-Fi devices
-station <device> scan # initiate a scan for networks
-station <device> get-networks   # list all available networks
+iwctl	# get an interactive prompt
+device list	# list all Wi-Fi devices
+station <device> scan	# initiate a scan for networks
+station <device> get-networks	# list all available networks
 station <device> connect <SSID>
 exit
+```
+
+### [OPTIONAL] ssh connection
+
+I want remotely connect to the PC from another because you can easily copy-paste the commands
+
+```bash
+passwd # a password like '1234' it's ok
+
+ip addr # see which IP address has
+```
+
+Now from another pc...
+
+```bash
+ssh root@<IPaddress>
 ```
 
 ### Update the system clock
@@ -86,19 +108,22 @@ timedatectl set-ntp true # ensure the system clock is accurate
 # to identify disk devices
 fdisk -l
 lsblk
-fdisk /dev/<disk name>
-g # make new GPT partition table
-n # new partition
-t # change partition type
-w # write changes and exit
+
+# open disk utility to modify the disk table of <the_disk_to_be_partitioned>
+fdisk /dev/<the_disk_to_be_partitioned>
+g	# make new GPT partition table
+n	# new partition
+p	# print to see the situation
+t	# change partition type
+w	# write changes and exit
 ```
 
 > In this point I've 2 partitions:
 >
-> | Partition number | Size | Type |
-> |---|---|---|
-> |1 | 512M | EFI System [1] |
-> |2 | all free sector remaining  | Linux root (x86_64) [23] |
+> | Partition number | Size                      | Type                     |
+> | ---------------- | ------------------------- | ------------------------ |
+> | 1                | 1G                        | EFI System [1]           |
+> | 2                | all free sector remaining | Linux root (x86_64) [23] |
 
 #### Encrypt root partition
 
@@ -113,9 +138,8 @@ cryptsetup open /dev/<root_partition> cryptlvm
 pvcreate /dev/mapper/cryptlvm
 vgcreate vg /dev/mapper/cryptlvm
 
-lvcreate -L 128G vg -n root
-lvcreate -l 100%FREE vg -n home
-lvreduce -L -256M vg/home
+lvcreate -l 100%FREE vg -n root
+lvreduce -L -256M vg/root	# see https://wiki.archlinux.org/title/Dm-crypt/Encrypting_an_entire_system#Preparing_the_logical_volumes to understand why
 ```
 
 ### Format the partitions
@@ -124,14 +148,12 @@ lvreduce -L -256M vg/home
 mkfs.fat -F 32 /dev/<efi_system_partition>
 
 mkfs.ext4 /dev/vg/root
-mkfs.ext4 /dev/vg/home
 ```
 
 ### Mount the file systems
 
 ```bash
 mount /dev/vg/root /mnt
-mount --mkdir /dev/vg/home /mnt/home
 mount --mkdir /dev/<efi_system_partition> /mnt/efi
 ```
 
@@ -146,7 +168,7 @@ reflector -l 10 --sort rate -p https --save /etc/pacman.d/mirrorlist
 ### Install essential packages
 
 ```bash
-pacstrap -K /mnt base linux linux-firmware lvm2 intel-ucode vim sbctl networkmanager terminus-font sudo
+pacstrap -K /mnt base linux-lts linux-firmware intel-ucode lvm2 sof-firmware iwd nano vim man-db man-pages sudo openssh sbctl tpm2-tss
 ```
 
 ## Configure the system
@@ -192,19 +214,15 @@ echo "<hostname>" > /etc/hostname
 Modify the file ...
 
 ```bash
-vim /etc/mkinitcpio.d/linux.preset
+nano /etc/mkinitcpio.d/linux-lts.preset
 ```
 
 ... to make like this:
 
 ```bash
-# mkinitcpio preset file for the 'linux' package
+# mkinitcpio preset file for the 'linux-lts' package
 
-#ALL_config="/etc/mkinitcpio.conf"
-ALL_kver="/boot/vmlinuz-linux"
-ALL_microcode=(/boot/intel-ucode.img)
-
-PRESETS=('default' 'fallback')
+# ...
 
 #default_config="/etc/mkinitcpio.conf"
 #default_image="/boot/initramfs-linux.img"
@@ -220,23 +238,36 @@ fallback_options="-S autodetect"
 Modify this file...
 
 ```bash
-vim /etc/mkinitcpio.conf
+nano /etc/mkinitcpio.conf
 ```
 
 ... and modify MODULES and HOOKS:
 
 ```bash
 # ...
-MODULES=(tpm_tis)
+HOOKS=(base systemd autodetect microcode modconf kms keyboard sd-vconsole block sd-encrypt lvm2 filesystems fsck)
 # ...
-HOOKS=(base systemd autodetect modconf kms keyboard sd-vconsole block sd-encrypt lvm2 filesystems fsck)
+```
+
+### Kernel cmdline
+ 
+```bash
+vim /etc/kernel/cmdline
+```
+
+write in this file...
+
+```bash
+rd.luks.name=<root_partition_UUID_value>=cryptlvm root=/dev/vg/root rw
+
+# to insert the <root_partition_UUID_value>, in Normal mode, write ":read ! blkid /dev/<root_partition>" and take only the UUID value (" " inclused).
 ```
 
 ### Initramfs
 
 ```bash
 mkdir -p /efi/EFI/Linux
-mkinitcpio -p linux
+mkinitcpio -p linux-lts
 ```
 
 ### Boot loader
@@ -254,51 +285,70 @@ bootctl --esp-path=/efi install
 set this file...
 
 ```bash
-vim /efi/loader/loader.conf
+nano /efi/loader/loader.conf
 ```
 
 in this...
 
 ```bash
-default  arch-linux.efi
+default  arch-linux-lts.efi
 timeout  0
 console-mode auto
 editor   no
 ```
 
-### Kernel cmdline
-
-```bash
-vim /etc/kernel/cmdline
-```
-
-write in this file...
-
-```bash
-rd.luks.name=<root_partition_UUID_value>=cryptlvm root=/dev/vg/root rw
-
-# to insert the <root_partition_UUID_value>, in Normal mode, write ":read ! blkid /dev/<root_partition>" and take only the UUID value.
-```
-
 ### Root password
 
 ```bash
-passwd
+passwd # the real root password
 ```
 
 ### Manage users
 
 ```bash
 useradd -mG wheel <user_name>
-passwd matteo
+passwd <user_name>
 EDITOR=vim visudo # to uncomment '%wheel ALL=(ALL:ALL) ALL'
 ```
 
-### Configure NetworkManager service
+### Configure iwd service
+
+write in file...
 
 ```bash
-systemctl enable NetworkManager.service
+mkdir -p /etc/iwd/
+
+touch /etc/iwd/main.conf
+
+nano /etc/iwd/main.conf
 ```
+
+... to this:
+
+```bash
+[Scan]
+DisablePeriodicScan=true
+
+[General]
+EnableNetworkConfiguration=true
+
+[Network]
+RoutePriorityOffset=300
+EnableIPv6=true
+NameResolvingService=systemd
+```
+
+```bash
+systemctl enable systemd-resolved iwd
+```
+
+### Setup ssh server to persiste after reboot
+
+```bash
+systemctl enable sshd
+```
+
+Uncomment `Port` in `/etc/ssh/sshd_config` and change the port number with a random higher number (1000~9999)
 
 ### Reboot
 
@@ -313,7 +363,19 @@ reboot
 
 ### Reconnect Wifi
 
-Write and execute `nmtui` to manage cabled and wireless connections easily.
+Follow these steps to [connect a wifi](#connect-to-the-internet) and check that is it works with `ping`.
+
+```bash
+ip addr # check the IP address
+```
+
+### SSH reconnection
+
+From another PC...
+
+```bash
+ssh <user_name>@<IP_address> -p <port_number>
+```
 
 ### Secure boot
 
@@ -337,7 +399,7 @@ sign all files...
 
 ```bash
 sudo sbctl sign-all
-sudo reboot
+sudo sbctl sign -s <path/to/file_to_sign>
 ```
 
 check that all file is signed
@@ -356,11 +418,7 @@ systemd-cryptenroll --tpm2-device=list
 sudo systemd-cryptenroll --tpm2-device=</path/to/tpm2_device> --tpm2-pcrs=0+7 /dev/<root_partition>
 
 # If it don't work, use the following command to wipe the tpm slot 1 and retry
-systemd-cryptenroll /dev/<root_partition> --wipe-slot=1
+sudo systemd-cryptenroll /dev/<root_partition> --wipe-slot=1
 ```
 
-Reboot to check that works and...
-
-![That's all folks][That's_all_folks]
-
-[That's_all_folks]: https://pixy.org/src/58/584218.jpg
+Reboot to check that works.
