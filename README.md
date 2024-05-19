@@ -258,7 +258,7 @@ vim /etc/kernel/cmdline
 write in this file...
 
 ```bash
-rd.luks.name=<root_partition_UUID_value>=cryptlvm root=/dev/vg/root rw
+rd.luks.name=<root_partition_UUID_value>=cryptlvm root=/dev/vg/root rw quiet loglevel=3 systemd.show_status=auto rd.udev.log_level=3
 
 # to insert the <root_partition_UUID_value>, in Normal mode, write ":read ! blkid /dev/<root_partition>" and take only the UUID value (" " inclused).
 ```
